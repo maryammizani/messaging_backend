@@ -1,8 +1,12 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 
 const feedRoutes = require('./routes/feed');
 const app = express();
+
+const key = require('./key');
+const MONGODB_URI = key.MONGODB_URI;
 
 //app.use(bodyParser.urlencoded()); /// x-www-form-urlencoded <form>
 app.use(bodyParser.json());  //application/json
@@ -18,4 +22,9 @@ app.use((req, res, next) => {
 
 app.use('/feed', feedRoutes);
 
-app.listen(8080);
+mongoose.connect(MONGODB_URI + '?retryWrites=true', { useNewUrlParser: true } )
+.then(result => {
+    app.listen(8080);
+})
+.catch(err => console.log(err));
+

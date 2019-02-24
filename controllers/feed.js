@@ -1,5 +1,7 @@
 const {validationResult } = require('express-validator/check');
 
+const Post = require('../models/post');
+
 exports.getPosts = (req, res, next) => {
     res.status(200).json({
         posts: [{
@@ -25,15 +27,25 @@ exports.createPost = (req, res, next) => {
     }
     const title = req.body.title;
     const content = req.body.content;
-    //create post in db
-    res.status(201).json({
-        message: 'Post created',
-        post: {
-            _id: new Date().toISOString(), 
-            title: title,
-            content: content,
-            creator: {name: 'Maryam'},
-            createdAt: new Date()
-        }
+
+    // Create the post in DB
+    const post = new Post({
+        // _id will be automatically created by mongoose
+        //  createdAt: timestamp will be automatically created by mongoose
+        title: title,
+        content: content,
+        imageUrl: 'images/t.jpg',
+        creator: {name: 'Maryam'}            
+    });
+    post.save() // Saves the model in the DB
+    .then(result => {
+        console.log(result);
+        res.status(201).json({
+            message: 'Post created',
+            post: result
+        });
+    })
+    .catch(err => {
+        console.log(err);
     });
 }
