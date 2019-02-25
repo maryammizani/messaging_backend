@@ -11,8 +11,8 @@ exports.getPosts = (req, res, next) => {
         })
     })
     .catch(err => {
-        if(!err.stausCode) {
-            err.stattusCode = 500;
+        if(!err.statusCode) {
+            err.statusCode = 500;
         }
         next(err);
     });
@@ -29,6 +29,16 @@ exports.createPost = (req, res, next) => {
         //     errors: errors.array()
         // });
     }
+    if(!req.file) {
+        const error = new Error('No image provided.');
+        error.statusCode = 422;
+        throw error;
+    }
+    let imageUrl = req.file.path;
+    if(process.platform === "win32")
+    {
+        imageUrl = imageUrl.replace("\\" ,"/");
+    }
     const title = req.body.title;
     const content = req.body.content;
 
@@ -38,7 +48,7 @@ exports.createPost = (req, res, next) => {
         //  createdAt: timestamp will be automatically created by mongoose
         title: title,
         content: content,
-        imageUrl: 'images/t.jpg',
+        imageUrl: imageUrl,
         creator: {name: 'Maryam'}            
     });
     post.save() // Saves the model in the DB
@@ -50,8 +60,8 @@ exports.createPost = (req, res, next) => {
         });
     })
     .catch(err => {
-        if(!err.stausCode) {
-            err.stattusCode = 500;
+        if(!err.statusCode) {
+            err.statusCode = 500;
         }
         next(err);
     });
@@ -69,8 +79,8 @@ exports.getPost = (req, res, next) => {
         res.status(200).json({message: 'Postfetched', post: post });
     })
     .catch(err => {
-        if(!err.stausCode) {
-            err.stattusCode = 500;
+        if(!err.statusCode) {
+            err.statusCode = 500;
         }
         next(err);
     });
