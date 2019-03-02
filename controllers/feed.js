@@ -3,6 +3,7 @@ const path = require('path');
 const {validationResult } = require('express-validator/check');
 
 const Post = require('../models/post');
+const User = require('../models/user');
 
 exports.getPosts = (req, res, next) => {
     const currentPage = req.query.page || 1;
@@ -55,6 +56,7 @@ exports.createPost = (req, res, next) => {
     }
     const title = req.body.title;
     const content = req.body.content;
+    let creator;
 
     // Create the post in DB
     const post = new Post({
@@ -63,14 +65,23 @@ exports.createPost = (req, res, next) => {
         title: title,
         content: content,
         imageUrl: imageUrl,
-        creator: {name: 'Maryam'}            
+        creator: req.userId //userId is extracted from the token in the middleware/is-auth            
     });
     post.save() // Saves the model in the DB
     .then(result => {
-        console.log(result);
+        return User.findById(req.userId);  // find the user to update its Posts 
+    })
+    // Update the user Posts in DB
+    .then(user => {
+        creator = user;
+        user.posts.push(post);  //mongoose will do all the heavy lifting of pulling out the post ID and adding that to the user.
+        return user.save();     
+    })
+    .then(result => {
         res.status(201).json({
             message: 'Post created',
-            post: result
+            post: post,
+            creator: {_id: creator._id, name: creator.name}
         });
     })
     .catch(err => {
