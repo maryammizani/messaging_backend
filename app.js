@@ -8,6 +8,8 @@ const uuidv4 = require('uuid/v4');
 
 const feedRoutes = require('./routes/feed');
 const authRoutes = require('./routes/auth');
+const key = require('./key');
+const MONGODB_URI = key.MONGODB_URI;
 
 const app = express();
 
@@ -38,8 +40,6 @@ const fileFilter = (req, file, cb) => {
 };
 
 
-const key = require('./key');
-const MONGODB_URI = key.MONGODB_URI;
 
 //app.use(bodyParser.urlencoded()); /// x-www-form-urlencoded <form>
 app.use(bodyParser.json());  //application/json
