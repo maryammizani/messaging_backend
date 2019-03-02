@@ -190,11 +190,16 @@ exports.deletePost = (req, res, next) => {
         clearImage(post.imageUrl);
         return Post.findByIdAndRemove(postId);      
     })
+    // Find the User in DB and update its posts
     .then(result => {
-        //console.log(result);
-        res.status(200).json({
-            message: 'Deleted post.',           
-        })
+        return User.findById(req.userId);
+    })
+    .then(user => {
+        user.posts.pull(postId);  // pull is a mongoose funtion that removes the post with the specified ID
+        return user.save();     
+    })
+    .then(result => {
+        res.status(200).json({ message: 'Deleted post.' });
     })
     .catch(err => {
         if(!err.statusCode) {
