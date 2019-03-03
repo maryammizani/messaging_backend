@@ -12,6 +12,7 @@ exports.getPosts = async (req, res, next) => {
     try {
         const totalItems = await Post.find().countDocuments();
         const posts = await Post.find()
+            .populate('creator')
             .skip((currentPage -1) * perPage)
             .limit(perPage);
         res.status(200).json({
@@ -28,7 +29,7 @@ exports.getPosts = async (req, res, next) => {
     }
 };
 
-exports.createPost = (req, res, next) => {
+exports.createPost = async (req, res, next) => {
 
     // Check validation errors that were gathered in routes 
     const errors = validationResult(req);  
@@ -53,8 +54,7 @@ exports.createPost = (req, res, next) => {
     }
     const title = req.body.title;
     const content = req.body.content;
-    let creator;
-
+ 
     // Create the post in DB
     const post = new Post({
         // _id will be automatically created by mongoose
@@ -64,51 +64,47 @@ exports.createPost = (req, res, next) => {
         imageUrl: imageUrl,
         creator: req.userId //userId is extracted from the token in the middleware/is-auth            
     });
-    post.save() // Saves the model in the DB
-    .then(result => {
-        return User.findById(req.userId);  // find the user to update its Posts 
-    })
-    // Update the user Posts in DB
-    .then(user => {
-        creator = user;
+    try {
+        await post.save(); // Saves the model in the DB
+        const user = await User.findById(req.userId);  // find the user to update its Posts 
+
+        // Update the user Posts in DB
         user.posts.push(post);  //mongoose will do all the heavy lifting of pulling out the post ID and adding that to the user.
-        return user.save();     
-    })
-    .then(result => {
+        await user.save();     
         res.status(201).json({
             message: 'Post created',
             post: post,
-            creator: {_id: creator._id, name: creator.name}
+            creator: {_id: user._id, name: user.name}
         });
-    })
-    .catch(err => {
+    }
+    catch (err) {
         if(!err.statusCode) {
             err.statusCode = 500;
         }
         next(err);
-    });
+    }
 }
 
-exports.getPost = (req, res, next) => {
+exports.getPost = async (req, res, next) => {
     const postId = req.params.postId;
-    Post.findById(postId)
-    .then(post => {
+    try {
+        const post = await Post.findById(postId);
         if(!post) {
             const error = new Error('Could not find post.');
             error.statusCode = 404;
             throw error;
         }
         res.status(200).json({message: 'Postfetched', post: post });
-    })
-    .catch(err => {
+    }
+    catch (err) {
         if(!err.statusCode) {
             err.statusCode = 500;
         }
         next(err);
-    });
+    }
 }
 
-exports.updatePost = (req, res, next) => {
+exports.updatePost = async (req, res, next) => {
 
     // Check validation errors that were gathered in routes 
     const errors = validationResult(req); 
@@ -135,8 +131,8 @@ exports.updatePost = (req, res, next) => {
     }
 
     // Update the post in DB
-    Post.findById(postId)
-    .then(post => {
+    try {
+        const post = await Post.findById(postId)
         if(!post) {
             const error = new Error('Could not find post.');
             error.statusCode = 404;
@@ -153,26 +149,24 @@ exports.updatePost = (req, res, next) => {
         post.title = title;
         post.imageUrl = imageUrl;
         post.content = content;
-        return post.save();
-    })
-    .then(result => {
+        const result = await post.save();  
         res.status(200).json({
             message: 'Post updated!',
             post: result
         });
-    })
-    .catch(err => {
+    } 
+    catch (err) {
         if(!err.statusCode) {
             err.statusCode = 500;
         }
         next(err);
-    });  
+    }
 }
 
-exports.deletePost = (req, res, next) => {
+exports.deletePost = async (req, res, next) => {
     const postId = req.params.postId;
-    Post.findById(postId)
-    .then(post => {
+    try {
+        const post = await Post.findById(postId);
         if(!post) {
             const error = new Error('Could not find post.');
             error.statusCode = 404;
@@ -185,25 +179,20 @@ exports.deletePost = (req, res, next) => {
             throw error;
         }
         clearImage(post.imageUrl);
-        return Post.findByIdAndRemove(postId);      
-    })
-    // Find the User in DB and update its posts
-    .then(result => {
-        return User.findById(req.userId);
-    })
-    .then(user => {
+        await Post.findByIdAndRemove(postId);      
+    
+        // Find the User in DB and update its posts
+        const user = await User.findById(req.userId);
         user.posts.pull(postId);  // pull is a mongoose funtion that removes the post with the specified ID
-        return user.save();     
-    })
-    .then(result => {
+        await user.save();        
         res.status(200).json({ message: 'Deleted post.' });
-    })
-    .catch(err => {
+    }
+    catch(err) {
         if(!err.statusCode) {
             err.statusCode = 500;
         }
         next(err);
-    });    
+    }  
 }
 
 const clearImage = filePath => {

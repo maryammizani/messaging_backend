@@ -42,6 +42,7 @@ router.patch('/status', isAuth, [
     .isEmpty()
     ],
     authController.updateUserStatus);
+    
 router.get('/status', isAuth, authController.getUserStatus);
 
 module.exports = router;
