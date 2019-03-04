@@ -13,6 +13,7 @@ exports.getPosts = async (req, res, next) => {
         const totalItems = await Post.find().countDocuments();
         const posts = await Post.find()
             .populate('creator')
+            .sort({createdAt: -1})
             .skip((currentPage -1) * perPage)
             .limit(perPage);
         res.status(200).json({
@@ -88,7 +89,7 @@ exports.createPost = async (req, res, next) => {
 exports.getPost = async (req, res, next) => {
     const postId = req.params.postId;
     try {
-        const post = await Post.findById(postId);
+        const post = await Post.findById(postId).populate('creator');
         if(!post) {
             const error = new Error('Could not find post.');
             error.statusCode = 404;
@@ -132,13 +133,14 @@ exports.updatePost = async (req, res, next) => {
 
     // Update the post in DB
     try {
-        const post = await Post.findById(postId)
+        const post = await Post.findById(postId).populate('creator');
         if(!post) {
             const error = new Error('Could not find post.');
             error.statusCode = 404;
             throw error;
         }
-        if(post.creator.toString() !== req.userId) {
+        //if(post.creator.toString() !== req.userId) {
+        if(post.creator._id.toString() !== req.userId) {
             const error = new Error('Not authorzied.');
             error.statusCode = 403;
             throw error;
