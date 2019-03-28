@@ -71,12 +71,13 @@ exports.createPost = async (req, res, next) => {
 
         // Update the user Posts in DB
         user.posts.push(post);  //mongoose will do all the heavy lifting of pulling out the post ID and adding that to the user.
-        await user.save();     
+        const saveUser = await user.save();     
         res.status(201).json({
             message: 'Post created',
             post: post,
             creator: {_id: user._id, name: user.name}
         });
+        return saveUser;
     }
     catch (err) {
         if(!err.statusCode) {
